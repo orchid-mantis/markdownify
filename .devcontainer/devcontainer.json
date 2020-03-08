@@ -1,0 +1,13 @@
+{
+	"name": "markdownify",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "web",
+	"workspaceFolder": "/workspaces/markdownify",
+	"extensions": [
+		"betterthantomorrow.calva",
+		"WakaTime.vscode-wakatime"
+	],
+	"settings":{
+		"calva.jokerPath": "/usr/bin"
+	}
+}
