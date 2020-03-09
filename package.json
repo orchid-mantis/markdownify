@@ -4,5 +4,10 @@
   "scripts": {},
   "devDependencies": {
     "shadow-cljs": "^2.8.91"
+  },
+  "dependencies": {
+    "react": "16.13.0",
+    "react-dom": "16.13.0",
+    "showdown": "^1.9.1"
   }
 }
