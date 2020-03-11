@@ -2,8 +2,8 @@
   (:require [reagent.core :as reagent]
             ["showdown" :as showdown]))
 
-(defonce markdown (reagent/atom ""))
-(defonce html     (reagent/atom ""))
+(defonce text-state (reagent/atom {:format :md
+                                   :value ""}))
 
 (defonce showdown-converter (showdown/Converter.))
 
@@ -12,6 +12,16 @@
 
 (defn html->md [html]
   (.makeMarkdown showdown-converter html))
+
+(defn ->md [{:keys [format value]}]
+  (case format
+    :md value
+    :html (html->md value)))
+
+(defn ->html [{:keys [format value]}]
+  (case format
+    :md (md->html value)
+    :html value))
 
 ; https://hackernoon.com/copying-text-to-clipboard-with-javascript-df4d4988697f
 (defn copy-to-clipboard [s]
@@ -41,14 +51,14 @@
      [:h2 "Markdown"]
      [:textarea
       {:on-change (fn [e]
-                    (reset! markdown (-> e .-target .-value))
-                    (reset! html     (md->html (-> e .-target .-value))))
-       :value @markdown
+                    (reset! text-state {:format :md
+                                        :value (-> e .-target .-value)}))
+       :value (->md @text-state)
        :style {:resize "none"
                :height "500px"
                :width "100%"}}]
      [:button
-      {:on-click #(copy-to-clipboard @markdown)
+      {:on-click #(copy-to-clipboard (->md @text-state))
        :style {:background-color :green
                :padding "1em"
                :color :white
@@ -61,14 +71,14 @@
      [:h2 "HTML"]
      [:textarea
       {:on-change (fn [e]
-                    (reset! markdown (html->md (-> e .-target .-value)))
-                    (reset! html     (-> e .-target .-value)))
-       :value @html
+                    (reset! text-state {:format :html
+                                        :value (-> e .-target .-value)}))
+       :value (->html @text-state)
        :style {:resize "none"
                :height "500px"
                :width "100%"}}]
      [:button
-      {:on-click #(copy-to-clipboard @html)
+      {:on-click #(copy-to-clipboard (->html @text-state))
        :style {:background-color :green
                :padding "1em"
                :color :white
@@ -80,9 +90,9 @@
               :padding-left "2em"}}
      [:h2 "HTML Preview"]
      [:div {:style {:height "500px"}
-            :dangerouslySetInnerHTML {:__html @html}}]
+            :dangerouslySetInnerHTML {:__html (->html @text-state)}}]
      [:button
-      {:on-click #(copy-to-clipboard @html)
+      {:on-click #(copy-to-clipboard (->html @text-state))
        :style {:background-color :green
                :padding "1em"
                :color :white
