@@ -1,6 +1,7 @@
 (ns markdownify.main
   (:require [reagent.core :as reagent]
-            ["showdown" :as showdown]))
+            ["showdown" :as showdown]
+            ["mousetrap" :as mousetrap]))
 
 (defonce flash-message (reagent/atom nil))
 (defonce flash-timeout (reagent/atom nil))
@@ -126,7 +127,8 @@
 
 (defn mount! []
   (reagent/render [app]
-                  (.getElementById js/document "app")))
+                  (.getElementById js/document "app"))
+  (mousetrap/bind "ctrl+i" (fn [e] (.log js/console "mousetrap works!"))))
 
 (defn main! []
   (mount!))
