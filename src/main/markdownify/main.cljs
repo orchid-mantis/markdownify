@@ -127,8 +127,8 @@
             :dangerouslySetInnerHTML {:__html (->html @text-state)}}]]]])
 
 (defn init-key-bindings [text-state]
-  (mousetrap/bind "ctrl+i" #(edit/selected->italic text-state))
-  (mousetrap/bind "ctrl+b" #(edit/selected->bold text-state)))
+  (mousetrap/bind "alt+i" #(edit/selected->italic text-state))
+  (mousetrap/bind "alt+b" #(edit/selected->bold text-state)))
 
 (defn mount! []
   (reagent/render [app]
