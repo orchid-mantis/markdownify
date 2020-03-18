@@ -128,7 +128,8 @@
 
 (defn init-key-bindings [text-state]
   (mousetrap/bind "alt+i" #(edit/selected->italic text-state))
-  (mousetrap/bind "alt+b" #(edit/selected->bold text-state)))
+  (mousetrap/bind "alt+b" #(edit/selected->bold text-state))
+  (mousetrap/bind "alt+h" #(edit/selected->header text-state)))
 
 (defn mount! []
   (reagent/render [app]

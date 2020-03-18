@@ -37,3 +37,6 @@
 
 (defn selected->bold [text-state]
   (md-edit text-state #(str "**" % "**")))
+
+(defn selected->header [text-state]
+  (md-edit text-state #(str "#" %)))
