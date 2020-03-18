@@ -1,7 +1,8 @@
 (ns markdownify.main
   (:require [reagent.core :as reagent]
             ["showdown" :as showdown]
-            ["mousetrap" :as mousetrap]))
+            ["mousetrap" :as mousetrap]
+            [markdownify.edit :as edit]))
 
 (defonce flash-message (reagent/atom nil))
 (defonce flash-timeout (reagent/atom nil))
@@ -78,7 +79,7 @@
     [:div
      {:style {:flex "1"}}
      [:h2 "Markdown"]
-     [:textarea
+     [:textarea#markdown-textarea.mousetrap
       {:on-change (fn [e]
                     (reset! text-state {:format :md
                                         :value (-> e .-target .-value)}))
@@ -125,10 +126,14 @@
      [:div {:style {:height "500px"}
             :dangerouslySetInnerHTML {:__html (->html @text-state)}}]]]])
 
+(defn init-key-bindings [text-state]
+  (mousetrap/bind "ctrl+i" #(edit/selected->italic text-state))
+  (mousetrap/bind "ctrl+b" #(edit/selected->bold text-state)))
+
 (defn mount! []
   (reagent/render [app]
                   (.getElementById js/document "app"))
-  (mousetrap/bind "ctrl+i" (fn [e] (.log js/console "mousetrap works!"))))
+  (init-key-bindings text-state))
 
 (defn main! []
   (mount!))
