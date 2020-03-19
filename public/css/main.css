@@ -18,6 +18,12 @@ textarea {
     width: 100%;
 }
 
+.toolbar button {
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
 .copy-button {
     background-color: green;
     padding: 1em;

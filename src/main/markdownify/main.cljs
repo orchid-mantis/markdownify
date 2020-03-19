@@ -70,7 +70,22 @@
     [:div
      {:style {:flex "1"}}
      [:div.header
-      [:h2 "Markdown"]]
+      [:h2 "Markdown"]
+      [:div.toolbar
+       [:button
+        {:on-click #(edit/selected->header text-state)
+         :title "Heading - Alt + H"}
+        "T"]
+       [:button
+        {:on-click #(edit/selected->bold text-state)
+         :title "Bold - Alt + B"
+         :style {:font-weight "bold"}}
+        "B"]
+       [:button
+        {:on-click #(edit/selected->italic text-state)
+         :title "Italic - Alt + I"
+         :style {:font-style "italic"}}
+        "I"]]]
      [:textarea#markdown-textarea.mousetrap
       {:on-change (fn [e]
                     (reset! text-state {:format :md
