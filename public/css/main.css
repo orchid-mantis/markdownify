@@ -29,6 +29,7 @@ textarea {
     padding: 1em;
     color: white;
     border-radius: 10px;
+    cursor: pointer;
 }
 
 .flash-message {
