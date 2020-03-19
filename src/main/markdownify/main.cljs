@@ -56,73 +56,50 @@
 
 (defn app []
   [:div {:style {:position :relative}}
-   [:div
-    {:style {:position :absolute
-             :margin :auto
-             :left 0
-             :right 0
-             :text-align :center
-             :max-width 200
-             :padding "2em"
-             :background-color "yellow"
-             :z-index 100
-             :border-radius 10
-             :transform (if @flash-message
+   [:div.flash-message 
+    {:style {:transform (if @flash-message
                           "scaleY(1)"
                           "scaleY(0)")
              :transition "transform 0.2s ease-out"}}
     @flash-message]
+   
    [:h1 "Markdownify"]
    [:div
     {:style {:display :flex}}
 
     [:div
      {:style {:flex "1"}}
-     [:h2 "Markdown"]
+     [:div.header
+      [:h2 "Markdown"]]
      [:textarea#markdown-textarea.mousetrap
       {:on-change (fn [e]
                     (reset! text-state {:format :md
                                         :value (-> e .-target .-value)}))
-       :value (->md @text-state)
-       :style {:resize "none"
-               :height "500px"
-               :width "100%"}}]
-     [:button
+       :value (->md @text-state)}]
+     [:button.copy-button
       {:on-click (fn []
                    (copy-to-clipboard (->md @text-state))
-                   (flash "Markdown copied to clipboard"))
-       :style {:background-color :green
-               :padding "1em"
-               :color :white
-               :border-radius 10}}
+                   (flash "Markdown copied to clipboard"))}
       "Copy Markdown"]]
 
-    [:div
-     {:style {:flex "1"
-              :padding-left "2em"}}
-     [:h2 "HTML"]
+    [:div.content
+     [:div.header
+      [:h2 "HTML"]]
      [:textarea
       {:on-change (fn [e]
                     (reset! text-state {:format :html
                                         :value (-> e .-target .-value)}))
-       :value (->html @text-state)
-       :style {:resize "none"
-               :height "500px"
-               :width "100%"}}]
-     [:button
+       :value (->html @text-state)}]
+     [:button.copy-button
       {:on-click (fn []
                    (copy-to-clipboard (->html @text-state))
                    (flash "HTML copied to clipboard"))
-       :style {:background-color :green
-               :padding "1em"
-               :color :white
-               :border-radius 10}}
+       }
       "Copy HTML"]]
 
-    [:div
-     {:style {:flex "1"
-              :padding-left "2em"}}
-     [:h2 "HTML Preview"]
+    [:div.content
+     [:div.header
+      [:h2 "HTML Preview"]]
      [:div {:style {:height "500px"}
             :dangerouslySetInnerHTML {:__html (->html @text-state)}}]]]])
 
