@@ -5,8 +5,11 @@
   {:start (.-selectionStart el)
    :end (.-selectionEnd el)})
 
-(defn slice [str start end]
-  (. str (slice start end)))
+(defn slice
+  ([str start end]
+   (. str (slice start end)))
+  ([str end]
+   (. str (slice end))))
 
 ; https://stackoverflow.com/questions/3964710/replacing-selected-text-in-the-textarea
 (defn replace-text [el text start end]
@@ -39,6 +42,39 @@
          (sort-by second)
          (last)
          (first))))
+
+(defn b-i-transitions [current-md req-md]
+  (case [current-md req-md]
+    [nil :italic] :->markdown
+    [nil :bold] :->markdown
+    [:italic :italic] :->plain-text
+    [:bold :bold] :->plain-text
+    [:italic :bold] :->bold-italic
+    [:bold :italic] :->bold-italic
+    [:bold-italic :italic] :->keep-one-remove-other
+    [:bold-italic :bold] :->keep-one-remove-other))
+
+(defn b-i-next-state-args [[current-md req-md] val [start end]]
+  (let [{gen-curr :gen-md offset-curr :offset} (get markdown current-md)
+        {:keys [gen-md offset]} (get markdown req-md)
+        select-offset #(/ (- (count %1) (count %2)) 2)]
+    (case (b-i-transitions current-md req-md)
+      :->markdown
+      {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
+
+      :->plain-text
+      {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]}
+
+      :->bold-italic
+      (let [{gen-md :gen-md} (get markdown :bold-italic)
+            offset (select-offset (gen-md val) (gen-curr val))]
+        {:replace [(gen-md val) (- start offset-curr) (+ end offset-curr)] :select [(+ start offset) (+ end offset)]})
+
+      :->keep-one-remove-other
+      (let [other (first (s/difference #{:italic :bold} #{req-md}))
+            {gen-other :gen-md} (get markdown other)
+            offset (select-offset (gen-curr val) (gen-other val))]
+        {:replace [(gen-other val) (- start offset-curr) (+ end offset-curr)] :select [(- start offset) (- end offset)]}))))
 
 (defn md-edit [text-state req-md]
   (let [el (.getElementById js/document "markdown-textarea")
