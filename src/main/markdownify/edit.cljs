@@ -22,7 +22,7 @@
   (-> el (.setSelectionRange start end)))
 
 (def markdown {; heading
-               :heading     {:gen-md #(str "#" %)         :offset 1}
+               :heading     {:gen-md #(str "#" % " ")     :offset 1}
                ; bold-italic
                :italic      {:gen-md #(str "*" % "*")     :offset 1}
                :bold        {:gen-md #(str "**" % "**")   :offset 2}

@@ -6,7 +6,7 @@
 
 (deftest current-md-test
   (is (= nil
-         (current-md "this is some text" 6 8)))
+         (current-md "this is some text" 5 7)))
   (is (= :italic
          (current-md "this *is* some text" 6 8)))
   (is (= :bold
@@ -25,14 +25,19 @@
   (testing "can generate markdown"
     (let [{:keys [replace]} (heading-state-args [nil :heading] "heading" [0 7])
           [value start end] replace]
-      (is (= "#heading"
+      (is (= "#heading " ; additional space is required (it helps with markdown remove)
              (replace-text "heading" value start end)))))
 
   (testing "can remove markdown"
     (let [{:keys [replace]} (heading-state-args [:heading :heading] "heading" [1 8])
           [value start end] replace]
       (is (= "heading"
-             (replace-text "#heading" value start end))))))
+             (replace-text "#heading" value start end))))
+    
+    (let [{:keys [replace]} (heading-state-args [:heading :heading] "h1" [1 3])
+          [value start end] replace]
+      (is (= "h1" ; missing space is expected 
+             (replace-text "#h1 " value start end))))))
 
 (deftest b-i-state-args-test
   (testing "can generate markdown"
