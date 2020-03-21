@@ -6,7 +6,7 @@
 
  :dependencies
  [[reagent "0.9.1"]]
- 
+
  :dev-http {9090 "public/"}
 
  :builds
@@ -14,4 +14,7 @@
         :asset-path "compiledjs"
         :target :browser
         :modules {:main {:init-fn markdownify.main/main!}}
-        :devtools {:after-load markdownify.main/reload!}}}}
+        :devtools {:after-load markdownify.main/reload!}}
+  :test {:target    :node-test
+         :output-to "out/node-tests.js"
+         :autorun   true}}}
