@@ -117,7 +117,9 @@
           (let [[start end] select]
             (re-select el start end))
           (reset! text-state {:format :md
-                              :value (.-value el)}))))))
+                              :value (.-value el)}))
+        (when (nil? result)
+          (re-select el start end))))))
 
 (defn selected->italic [text-state]
   (md-edit text-state :italic))
