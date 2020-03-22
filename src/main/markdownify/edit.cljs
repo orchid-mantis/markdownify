@@ -68,22 +68,15 @@
         {:keys [gen-md offset]} (get markdown req-md)
         select-offset #(/ (- (count %1) (count %2)) 2)]
     (case next-state
-      :->h1
+      (:->h1 :->italic :->bold)
       {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
 
       :->h2
       (let [{gen-md :gen-md} (get markdown :h2)]
         {:replace [(gen-md val) (- start offset) (+ end offset)] :select [(+ start offset) (+ end offset)]})
 
-      :->h2-remove
-      (let [{offset :offset} (get markdown :h2)]
-        {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]})
-
-      (:->italic :->bold)
-      {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
-
-      (:->italic-remove :->bold-remove)
-      {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]}
+      (:->h2-remove :->italic-remove :->bold-remove)
+      {:replace [val (- start offset-curr) (+ end offset-curr)] :select [(- start offset-curr) (- end offset-curr)]}
 
       :->bold-italic
       (let [{gen-md :gen-md} (get markdown :bold-italic)
