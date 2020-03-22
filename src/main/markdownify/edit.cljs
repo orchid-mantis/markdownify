@@ -29,15 +29,13 @@
                :bold        {:gen-md #(str "**" % "**")   :offset 2}
                :bold-italic {:gen-md #(str "***" % "***") :offset 3}})
 
-(defn heading-transitions [current-md req-md]
+(defn state-transitions [current-md req-md]
   (case [current-md req-md]
+    ; heading
     [nil :h1] :->h1
     [:h1 :h1] :->h2
     [:h2 :h1] :->h2-remove
-    nil))
-
-(defn b-i-transitions [current-md req-md]
-  (case [current-md req-md]
+    ; bold-italic
     [nil :italic] :->italic
     [nil :bold] :->bold
     [:italic :italic] :->italic-remove
@@ -65,9 +63,11 @@
          (last)
          (first))))
 
-(defn heading-state-args [[current-md req-md] val [start end]]
-  (let [{:keys [gen-md offset]} (get markdown :h1)]
-    (case (heading-transitions current-md req-md)
+(defn next-state-args [[current-md req-md next-state] [val start end]]
+  (let [{gen-curr :gen-md offset-curr :offset} (get markdown current-md)
+        {:keys [gen-md offset]} (get markdown req-md)
+        select-offset #(/ (- (count %1) (count %2)) 2)]
+    (case next-state
       :->h1
       {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
 
@@ -79,13 +79,6 @@
       (let [{offset :offset} (get markdown :h2)]
         {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]})
 
-      nil)))
-
-(defn b-i-state-args [[current-md req-md] val [start end]]
-  (let [{gen-curr :gen-md offset-curr :offset} (get markdown current-md)
-        {:keys [gen-md offset]} (get markdown req-md)
-        select-offset #(/ (- (count %1) (count %2)) 2)]
-    (case (b-i-transitions current-md req-md)
       (:->italic :->bold)
       {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
 
@@ -101,32 +94,25 @@
       (let [other (first (s/difference #{:italic :bold} #{req-md}))
             {gen-other :gen-md} (get markdown other)
             offset (select-offset (gen-curr val) (gen-other val))]
-        {:replace [(gen-other val) (- start offset-curr) (+ end offset-curr)] :select [(- start offset) (- end offset)]})
-
-      nil)))
+        {:replace [(gen-other val) (- start offset-curr) (+ end offset-curr)] :select [(- start offset) (- end offset)]}))))
 
 (defn md-edit [text-state req-md]
   (let [el (.getElementById js/document "markdown-textarea")
         {:keys [start end]} (selected-range el)
         selected (slice (.-value el) start end)
         selected (when (seq selected) (. selected trim))
-        current-md (current-md (.-value el) start end)]
-    (when (seq selected)
-      (let [result (->> [heading-state-args b-i-state-args]
-                        (map (fn [f] (f [current-md req-md] selected [start end])))
-                        (filter some?)
-                        (first))
-            {:keys [replace select]} result]
-        (when result
-          (let [[value start end] replace]
-            (replace-text el value start end))
+        current-md (current-md (.-value el) start end)
+        next-state (state-transitions current-md req-md)]
+    (if (and (seq selected) next-state)
+      (let [{:keys [replace select]} (next-state-args [current-md req-md next-state] [selected start end])]
+        (let [[value start end] replace]
+          (replace-text el value start end))
+        (let [[start end] select]
+          (re-select el start end))
+        (reset! text-state {:format :md
+                            :value (.-value el)}))
 
-          (let [[start end] select]
-            (re-select el start end))
-          (reset! text-state {:format :md
-                              :value (.-value el)}))
-        (when (nil? result)
-          (re-select el start end))))))
+      (re-select el start end))))
 
 (defn selected->italic [text-state]
   (md-edit text-state :italic))
