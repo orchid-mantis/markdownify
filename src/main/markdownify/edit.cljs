@@ -1,26 +1,6 @@
 (ns markdownify.edit
   (:require [clojure.set :as s]))
 
-(defn selected-range [el]
-  {:start (.-selectionStart el)
-   :end (.-selectionEnd el)})
-
-(defn slice
-  ([str start end]
-   (. str (slice start end)))
-  ([str end]
-   (. str (slice end))))
-
-; https://stackoverflow.com/questions/3964710/replacing-selected-text-in-the-textarea
-(defn replace-text [el text start end]
-  (set! (.-value el) (str (. (.-value el) (slice 0 start))
-                          text
-                          (. (.-value el) (slice end)))))
-
-(defn re-select [el start end]
-  (-> el .focus)
-  (-> el (.setSelectionRange start end)))
-
 (def markdown {; heading
                :h1          {:gen-md #(str "#" % " ")     :offset 1}
                :h2          {:gen-md #(str "##" % "  ")   :offset 2}
@@ -46,22 +26,11 @@
     [:bold-italic :bold] :->keep-italic-remove-bold
     nil))
 
-(defn map-values [f map]
-  (into {} (for [[k v] map]
-             [k (f v)])))
-
-(defn current-md [val start end]
-  (let [selected (slice val start end)
-        slice-fn (fn [{:keys [gen-md offset]}]
-                   (let [slice (slice val (- start offset) (+ end offset))
-                         new-text (gen-md selected)]
-                     [offset (= slice new-text)]))]
-    (->> (map-values slice-fn markdown)
-         (filter (fn [[_ [_ bool]]] (true? bool)))
-         (map-values first)
-         (sort-by second)
-         (last)
-         (first))))
+(defn slice
+  ([str start end]
+   (. str (slice start end)))
+  ([str end]
+   (. str (slice end))))
 
 (defn shift [direction start end offset]
   (case direction
@@ -91,9 +60,40 @@
             {:keys [gen-md offset]} (get markdown other)]
         {:replace [(gen-md val) (- start curr-off) (+ end curr-off)] :select (shift :left start end (- curr-off offset))}))))
 
+(defn map-values [f map]
+  (into {} (for [[k v] map]
+             [k (f v)])))
+
+(defn current-md [val start end]
+  (let [selected (slice val start end)
+        slice-fn (fn [{:keys [gen-md offset]}]
+                   (let [slice (slice val (- start offset) (+ end offset))
+                         new-text (gen-md selected)]
+                     [offset (= slice new-text)]))]
+    (->> (map-values slice-fn markdown)
+         (filter (fn [[_ [_ bool]]] (true? bool)))
+         (map-values first)
+         (sort-by second)
+         (last)
+         (first))))
+
+(defn selection-range [el]
+  {:start (.-selectionStart el)
+   :end   (.-selectionEnd   el)})
+
+; https://stackoverflow.com/questions/3964710/replacing-selected-text-in-the-textarea
+(defn replace-text [el val start end]
+  (set! (.-value el) (str (slice (.-value el) 0 start)
+                          val
+                          (slice (.-value el) end))))
+
+(defn select-text [el start end]
+  (-> el .focus)
+  (-> el (.setSelectionRange start end)))
+
 (defn md-edit [text-state req-md]
   (let [el (.getElementById js/document "markdown-textarea")
-        {:keys [start end]} (selected-range el)
+        {:keys [start end]} (selection-range el)
         selected (slice (.-value el) start end)
         selected (when (seq selected) (. selected trim))
         current-md (current-md (.-value el) start end)
@@ -103,11 +103,11 @@
         (let [[value start end] replace]
           (replace-text el value start end))
         (let [[start end] select]
-          (re-select el start end))
+          (select-text el start end))
         (reset! text-state {:format :md
                             :value (.-value el)}))
 
-      (re-select el start end))))
+      (select-text el start end))))
 
 (defn selected->italic [text-state]
   (md-edit text-state :italic))
