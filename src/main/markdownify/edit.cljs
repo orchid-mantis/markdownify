@@ -63,31 +63,33 @@
          (last)
          (first))))
 
+(defn shift [direction start end offset]
+  (case direction
+    :left  [(- start offset) (- end offset)]
+    :right [(+ start offset) (+ end offset)]))
+
 (defn next-state-args [[current-md req-md next-state] [val start end]]
-  (let [{gen-curr :gen-md offset-curr :offset} (get markdown current-md)
-        {:keys [gen-md offset]} (get markdown req-md)
-        select-offset #(/ (- (count %1) (count %2)) 2)]
+  (let [{curr-off :offset} (get markdown current-md)
+        {:keys [gen-md offset]} (get markdown req-md)]
     (case next-state
       (:->h1 :->italic :->bold)
-      {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
+      {:replace [(gen-md val) start end] :select (shift :right start end offset)}
 
       :->h2
       (let [{gen-md :gen-md} (get markdown :h2)]
-        {:replace [(gen-md val) (- start offset) (+ end offset)] :select [(+ start offset) (+ end offset)]})
+        {:replace [(gen-md val) (- start 1) (+ end 1)] :select (shift :right start end 1)})
 
       (:->h2-remove :->italic-remove :->bold-remove)
-      {:replace [val (- start offset-curr) (+ end offset-curr)] :select [(- start offset-curr) (- end offset-curr)]}
+      {:replace [val (- start curr-off) (+ end curr-off)] :select (shift :left start end curr-off)}
 
       :->bold-italic
-      (let [{gen-md :gen-md} (get markdown :bold-italic)
-            offset (select-offset (gen-md val) (gen-curr val))]
-        {:replace [(gen-md val) (- start offset-curr) (+ end offset-curr)] :select [(+ start offset) (+ end offset)]})
+      (let [{:keys [gen-md offset]} (get markdown :bold-italic)]
+        {:replace [(gen-md val) (- start curr-off) (+ end curr-off)] :select (shift :right start end (- offset curr-off))})
 
       (:->keep-bold-remove-italic :->keep-italic-remove-bold)
       (let [other (first (s/difference #{:italic :bold} #{req-md}))
-            {gen-other :gen-md} (get markdown other)
-            offset (select-offset (gen-curr val) (gen-other val))]
-        {:replace [(gen-other val) (- start offset-curr) (+ end offset-curr)] :select [(- start offset) (- end offset)]}))))
+            {:keys [gen-md offset]} (get markdown other)]
+        {:replace [(gen-md val) (- start curr-off) (+ end curr-off)] :select (shift :left start end (- curr-off offset))}))))
 
 (defn md-edit [text-state req-md]
   (let [el (.getElementById js/document "markdown-textarea")
