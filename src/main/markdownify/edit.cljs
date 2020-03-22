@@ -33,19 +33,19 @@
   (case [current-md req-md]
     [nil :h1] :->h1
     [:h1 :h1] :->h2
-    [:h2 :h1] :->plain-text
+    [:h2 :h1] :->h2-remove
     nil))
 
 (defn b-i-transitions [current-md req-md]
   (case [current-md req-md]
-    [nil :italic] :->markdown
-    [nil :bold] :->markdown
-    [:italic :italic] :->plain-text
-    [:bold :bold] :->plain-text
+    [nil :italic] :->italic
+    [nil :bold] :->bold
+    [:italic :italic] :->italic-remove
+    [:bold :bold] :->bold-remove
     [:italic :bold] :->bold-italic
     [:bold :italic] :->bold-italic
-    [:bold-italic :italic] :->keep-one-remove-other
-    [:bold-italic :bold] :->keep-one-remove-other
+    [:bold-italic :italic] :->keep-bold-remove-italic
+    [:bold-italic :bold] :->keep-italic-remove-bold
     nil))
 
 (defn map-values [f map]
@@ -75,7 +75,7 @@
       (let [{gen-md :gen-md} (get markdown :h2)]
         {:replace [(gen-md val) (- start offset) (+ end offset)] :select [(+ start offset) (+ end offset)]})
 
-      :->plain-text
+      :->h2-remove
       (let [{offset :offset} (get markdown :h2)]
         {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]})
 
@@ -86,10 +86,10 @@
         {:keys [gen-md offset]} (get markdown req-md)
         select-offset #(/ (- (count %1) (count %2)) 2)]
     (case (b-i-transitions current-md req-md)
-      :->markdown
+      (:->italic :->bold)
       {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
 
-      :->plain-text
+      (:->italic-remove :->bold-remove)
       {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]}
 
       :->bold-italic
@@ -97,7 +97,7 @@
             offset (select-offset (gen-md val) (gen-curr val))]
         {:replace [(gen-md val) (- start offset-curr) (+ end offset-curr)] :select [(+ start offset) (+ end offset)]})
 
-      :->keep-one-remove-other
+      (:->keep-bold-remove-italic :->keep-italic-remove-bold)
       (let [other (first (s/difference #{:italic :bold} #{req-md}))
             {gen-other :gen-md} (get markdown other)
             offset (select-offset (gen-curr val) (gen-other val))]
