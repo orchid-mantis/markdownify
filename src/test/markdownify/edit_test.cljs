@@ -1,6 +1,15 @@
 (ns markdownify.edit-test
   (:require [cljs.test :refer (deftest testing is)]
-            [markdownify.edit :refer (current-md slice next-state-args)]))
+            [markdownify.edit :refer (slice current-md trim-range next-state-args)]))
+
+(defn replace-text [input-text value start end]
+  (str (slice input-text 0 start)
+       value
+       (slice input-text end)))
+
+(defn select-text [input-text start end]
+  (let [selected (slice input-text start end)]
+    (replace-text input-text (str "|" selected "|") start end)))
 
 (deftest current-md-test
   (is (= nil
@@ -14,14 +23,13 @@
   (is (= :bold-italic
          (current-md "this ****is**** some text" 9 11))))
 
-(defn replace-text [input-text value start end]
-  (str (slice input-text 0 start)
-       value
-       (slice input-text end)))
-
-(defn select-text [input-text start end]
-  (let [selected (slice input-text start end)]
-    (replace-text input-text (str "|" selected "|") start end)))
+(deftest trim-range-test
+  (let [input "   a  z "
+        [start end] (trim-range input 0 8)]
+    (is (= [3 7]
+           [start end]))
+    (is (= "   |a  z| "
+           (select-text input start end)))))
 
 (deftest next-state-args-test
   (testing "state transitions for heading"

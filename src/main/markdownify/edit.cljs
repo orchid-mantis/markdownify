@@ -91,11 +91,22 @@
   (-> el .focus)
   (-> el (.setSelectionRange start end)))
 
+(defn count-space-indent [str]
+  (count (take-while #{\space} str)))
+
+(defn space-indent-counts [str]
+  [(count-space-indent str) (count-space-indent (reverse str))])
+
+(defn trim-range [str start end]
+  (let [[c1 c2] (space-indent-counts str)]
+    [(+ start c1) (- end c2)]))
+
 (defn md-edit [text-state req-md]
   (let [el (.getElementById js/document "markdown-textarea")
         {:keys [start end]} (selection-range el)
-        selected (slice (.-value el) start end)
-        selected (when (seq selected) (. selected trim))
+        user-selection (slice (.-value el) start end)
+        [start end] (trim-range user-selection start end)
+        selected (when (seq user-selection) (. user-selection trim))
         current-md (current-md (.-value el) start end)
         next-state (state-transitions current-md req-md)]
     (if (and (seq selected) next-state)
