@@ -19,65 +19,117 @@
        value
        (slice input-text end)))
 
+(defn select-text [input-text start end]
+  (let [selected (slice input-text start end)]
+    (replace-text input-text (str "|" selected "|") start end)))
+
 (deftest next-state-args-test
   (testing "state transitions for heading"
-    (let [{:keys [replace]} (next-state-args [nil :h1 :->h1] ["heading" 0 7])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [nil :h1 :->h1] ["heading" 0 7])
+          [value start end] replace
+          replaced (replace-text "heading" value start end)
+          [s e] select]
       (is (= "#heading " ; additional space is required (it helps with markdown remove)
-             (replace-text "heading" value start end))))
+             replaced))
+      (is (= "#|heading| "
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:h1 :h1 :->h2] ["heading" 1 8])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:h1 :h1 :->h2] ["heading" 1 8])
+          [value start end] replace
+          replaced (replace-text "#heading" value start end)
+          [s e] select]
       (is (= "##heading  " ; additional spaces
-             (replace-text "#heading" value start end))))
+             replaced))
+      (is (= "##|heading|  "
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:h2 :h1 :->h2-remove] ["h1" 2 4])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:h2 :h1 :->h2-remove] ["h1" 2 4])
+          [value start end] replace
+          replaced (replace-text "##h1" value start end)
+          [s e] select]
       (is (= "h1"
-             (replace-text "##h1" value start end))))
+             replaced))
+      (is (= "|h1|"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:h2 :h1 :->h2-remove] ["h1" 2 4])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:h2 :h1 :->h2-remove] ["h1" 2 4])
+          [value start end] replace
+          replaced (replace-text "##h1  " value start end)
+          [s e] select]
       (is (= "h1" ; additional spaces are removed
-             (replace-text "##h1  " value start end)))))
+             replaced))
+      (is (= "|h1|"
+             (select-text replaced s e)))))
 
   (testing "state transitions for bold & italic"
-    (let [{:keys [replace]} (next-state-args [nil :italic :->italic] ["italic" 0 6])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [nil :italic :->italic] ["italic" 0 6])
+          [value start end] replace
+          replaced (replace-text "italic" value start end)
+          [s e] select]
       (is (= "*italic*"
-             (replace-text "italic" value start end))))
+             replaced))
+      (is (= "*|italic|*"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [nil :bold :->bold] ["bold" 0 4])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [nil :bold :->bold] ["bold" 0 4])
+          [value start end] replace
+          replaced (replace-text "bold" value start end)
+          [s e] select]
       (is (= "**bold**"
-             (replace-text "bold" value start end))))
+             replaced))
+      (is (= "**|bold|**"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:italic :bold :->bold-italic] ["bold-italic" 1 12])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:italic :bold :->bold-italic] ["bold-italic" 1 12])
+          [value start end] replace
+          replaced (replace-text "*bold-italic*" value start end)
+          [s e] select]
       (is (= "***bold-italic***"
-             (replace-text "*bold-italic*" value start end))))
+             replaced))
+      (is (= "***|bold-italic|***"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:bold :italic :->bold-italic] ["bold-italic" 2 13])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:bold :italic :->bold-italic] ["bold-italic" 2 13])
+          [value start end] replace
+          replaced (replace-text "**bold-italic**" value start end)
+          [s e] select]
       (is (= "***bold-italic***"
-             (replace-text "**bold-italic**" value start end))))
+             replaced))
+      (is (= "***|bold-italic|***"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:italic :italic :->italic-remove] ["italic" 1 7])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:italic :italic :->italic-remove] ["italic" 1 7])
+          [value start end] replace
+          replaced (replace-text "*italic*" value start end)
+          [s e] select]
       (is (= "italic"
-             (replace-text "*italic*" value start end))))
+             replaced))
+      (is (= "|italic|"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:bold :bold :->bold-remove] ["bold" 2 6])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:bold :bold :->bold-remove] ["bold" 2 6])
+          [value start end] replace
+          replaced (replace-text "**bold**" value start end)
+          [s e] select]
       (is (= "bold"
-             (replace-text "**bold**" value start end))))
+             replaced))
+      (is (= "|bold|"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:bold-italic :italic :->keep-bold-remove-italic] ["bold-italic" 3 14])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:bold-italic :italic :->keep-bold-remove-italic] ["bold-italic" 3 14])
+          [value start end] replace
+          replaced (replace-text "***bold-italic***" value start end)
+          [s e] select]
       (is (= "**bold-italic**"
-             (replace-text "***bold-italic***" value start end))))
+             replaced))
+      (is (= "**|bold-italic|**"
+             (select-text replaced s e))))
 
-    (let [{:keys [replace]} (next-state-args [:bold-italic :bold :->keep-italic-remove-bold] ["bold-italic" 3 14])
-          [value start end] replace]
+    (let [{:keys [replace select]} (next-state-args [:bold-italic :bold :->keep-italic-remove-bold] ["bold-italic" 3 14])
+          [value start end] replace
+          replaced (replace-text "***bold-italic***" value start end)
+          [s e] select]
       (is (= "*bold-italic*"
-             (replace-text "***bold-italic***" value start end))))))
+             replaced))
+      (is (= "*|bold-italic|*"
+             (select-text replaced s e))))))
