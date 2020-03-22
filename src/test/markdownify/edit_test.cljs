@@ -23,21 +23,26 @@
 
 (deftest heading-state-args-test
   (testing "can generate markdown"
-    (let [{:keys [replace]} (heading-state-args [nil :heading] "heading" [0 7])
+    (let [{:keys [replace]} (heading-state-args [nil :h1] "heading" [0 7])
           [value start end] replace]
       (is (= "#heading " ; additional space is required (it helps with markdown remove)
-             (replace-text "heading" value start end)))))
+             (replace-text "heading" value start end))))
+
+    (let [{:keys [replace]} (heading-state-args [:h1 :h1] "heading" [1 8])
+          [value start end] replace]
+      (is (= "##heading  " ; additional spaces
+             (replace-text "#heading" value start end)))))
 
   (testing "can remove markdown"
-    (let [{:keys [replace]} (heading-state-args [:heading :heading] "heading" [1 8])
+    (let [{:keys [replace]} (heading-state-args [:h2 :h1] "h1" [2 4])
           [value start end] replace]
-      (is (= "heading"
-             (replace-text "#heading" value start end))))
-    
-    (let [{:keys [replace]} (heading-state-args [:heading :heading] "h1" [1 3])
+      (is (= "h1"
+             (replace-text "##h1" value start end))))
+
+    (let [{:keys [replace]} (heading-state-args [:h2 :h1] "h1" [2 4])
           [value start end] replace]
-      (is (= "h1" ; missing space is expected 
-             (replace-text "#h1 " value start end))))))
+      (is (= "h1" ; additional spaces are removed
+             (replace-text "##h1  " value start end))))))
 
 (deftest b-i-state-args-test
   (testing "can generate markdown"

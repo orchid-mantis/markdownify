@@ -22,7 +22,8 @@
   (-> el (.setSelectionRange start end)))
 
 (def markdown {; heading
-               :heading     {:gen-md #(str "#" % " ")     :offset 1}
+               :h1          {:gen-md #(str "#" % " ")     :offset 1}
+               :h2          {:gen-md #(str "##" % "  ")   :offset 2}
                ; bold-italic
                :italic      {:gen-md #(str "*" % "*")     :offset 1}
                :bold        {:gen-md #(str "**" % "**")   :offset 2}
@@ -30,8 +31,9 @@
 
 (defn heading-transitions [current-md req-md]
   (case [current-md req-md]
-    [nil :heading] :->markdown
-    [:heading :heading] :->plain-text
+    [nil :h1] :->h1
+    [:h1 :h1] :->h2
+    [:h2 :h1] :->plain-text
     nil))
 
 (defn b-i-transitions [current-md req-md]
@@ -64,13 +66,18 @@
          (first))))
 
 (defn heading-state-args [[current-md req-md] val [start end]]
-  (let [{:keys [gen-md offset]} (get markdown req-md)]
+  (let [{:keys [gen-md offset]} (get markdown :h1)]
     (case (heading-transitions current-md req-md)
-      :->markdown
+      :->h1
       {:replace [(gen-md val) start end] :select [(+ start offset) (+ end offset)]}
 
+      :->h2
+      (let [{gen-md :gen-md} (get markdown :h2)]
+        {:replace [(gen-md val) (- start offset) (+ end offset)] :select [(+ start offset) (+ end offset)]})
+
       :->plain-text
-      {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]}
+      (let [{offset :offset} (get markdown :h2)]
+        {:replace [val (- start offset) (+ end offset)] :select [(- start offset) (- end offset)]})
 
       nil)))
 
@@ -128,4 +135,4 @@
   (md-edit text-state :bold))
 
 (defn selected->header [text-state]
-  (md-edit text-state :heading))
+  (md-edit text-state :h1))
